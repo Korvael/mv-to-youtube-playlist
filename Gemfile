@@ -1,4 +1,7 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
 
-gem 'nokogiri'
+source 'https://rubygems.org'
+
 gem 'httparty'
+gem 'nokogiri'
+gem 'yt'
