@@ -10,6 +10,7 @@ class MvToYoutube
   # Constantes definidas por el usuario
   MV_USER = 'Korvael'
   YT_PLAYLIST_NAME = 'Mediavida'
+  YT_PLAYLIST_PRIVACY_STATAUS = 'private'
 
   # Constantes del scraper
   MV_URL = 'https://www.mediavida.com/foro/feda/cancion-estas-escuchando-ahora-mismo-329209?'
@@ -54,9 +55,14 @@ class MvToYoutube
 
     # Descomentar si no se dispone de token de autenticación. Seguir las instrucciones en https://github.com/Fullscreen/yt#web-apps-that-require-user-interactions
     # YouTubeAuth.setup_token
-
     account = YouTubeAuth.config_auth
-    account.playlists
+
+    if !account.playlists.map(&:title).include?(YT_PLAYLIST_NAME)
+      p "Playlist '#{YT_PLAYLIST_NAME}' no encontrada. Se creará en este momento."
+      account.create_playlist(title: YT_PLAYLIST_NAME, privacy_status: YT_PLAYLIST_PRIVACY_STATAUS)
+    else
+      p "Playlist '#{YT_PLAYLIST_NAME}' encontrada."
+    end
   end
 end
 

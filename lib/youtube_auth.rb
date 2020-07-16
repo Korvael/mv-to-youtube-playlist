@@ -7,6 +7,7 @@ class YouTubeAuth
   # Constantes para la generación del token
   CLIENT_ID = ''
   CLIENT_SECRET = ''
+  REFRESH_TOKEN = ''
   SCOPES = ['youtube'].freeze
   REDIRECT_URI = 'https://google.es'
 
@@ -22,6 +23,11 @@ class YouTubeAuth
   end
 
   def self.config_auth
-    Yt::Account.new access_token: ''
+    Yt.configure do |config|
+      config.client_id = CLIENT_ID
+      config.client_secret = CLIENT_SECRET
+    end
+
+    Yt::Account.new refresh_token: REFRESH_TOKEN
   end
 end
