@@ -10,7 +10,7 @@ class MvToYoutube
   # Constantes definidas por el usuario
   MV_USER = 'Korvael'
   YT_PLAYLIST_NAME = 'Mediavida'
-  YT_PLAYLIST_PRIVACY_STATAUS = 'private'
+  YT_PLAYLIST_PRIVACY_STATUS = 'private'
 
   # Constantes del scraper
   MV_URL = 'https://www.mediavida.com/foro/feda/cancion-estas-escuchando-ahora-mismo-329209?'
@@ -26,7 +26,16 @@ class MvToYoutube
     video_ids = video_ids(total_pages)
 
     # Crea la playlist de YouTube si no existe
-    create_playlist(YT_PLAYLIST_NAME)
+    # Descomentar si no se dispone de token de autenticación. Seguir las instrucciones en https://github.com/Fullscreen/yt#web-apps-that-require-user-interactions
+    # YouTubeAuth.setup_token
+    @account = YouTubeAuth.config_auth
+    playlist = create_playlist(YT_PLAYLIST_NAME)
+
+    # Comprueba la disponibilidad de los vídeos que se van a insertar en la playlist
+    available_videos = check_video_availability(video_ids)
+
+    # Inserta los vídeos disponibles en la playlist
+    add_videos_to_playlist(available_videos, playlist)
   end
 
   def scrape(page)
@@ -34,35 +43,54 @@ class MvToYoutube
   end
 
   def video_ids(total_pages)
-    video_ids = []
-
     p "Obteniendo vídeos de Mediavida del usario #{MV_USER}..."
+    video_ids = []
 
     (1..total_pages).each do |i|
       scrape = scrape(i)
       scrape.css(MV_DIV_CLASS).css(MV_HREF_CLASS).each do |href|
-        video_ids << href['href'].split('v=').last
+        video_ids << href['href'].split('v=').last.split('&').first
       end
     end
 
-    p "Se encontraron un total de #{video_ids.size} vídeos en #{total_pages} páginas totales."
+    p "Se encontraron un total de #{video_ids.size} vídeos en #{total_pages} páginas."
 
     video_ids
   end
 
   def create_playlist(playlist_name)
-    p "Comprobando la existencia de la playlist #{playlist_name}..."
+    p "Comprobando la existencia de la playlist '#{playlist_name}'..."
 
-    # Descomentar si no se dispone de token de autenticación. Seguir las instrucciones en https://github.com/Fullscreen/yt#web-apps-that-require-user-interactions
-    # YouTubeAuth.setup_token
-    account = YouTubeAuth.config_auth
-
-    if !account.playlists.map(&:title).include?(YT_PLAYLIST_NAME)
-      p "Playlist '#{YT_PLAYLIST_NAME}' no encontrada. Se creará en este momento."
-      account.create_playlist(title: YT_PLAYLIST_NAME, privacy_status: YT_PLAYLIST_PRIVACY_STATAUS)
-    else
+    if @account.playlists.map(&:title).include?(YT_PLAYLIST_NAME)
       p "Playlist '#{YT_PLAYLIST_NAME}' encontrada."
+      @account.playlists.map.collect { |playlist| playlist.id if playlist.title.eql? YT_PLAYLIST_NAME }.first
+    else
+      p "Playlist '#{YT_PLAYLIST_NAME}' no encontrada. Se creará en este momento."
+      @account.create_playlist(title: YT_PLAYLIST_NAME, privacy_status: YT_PLAYLIST_PRIVACY_STATUS).id
     end
+  end
+
+  def check_video_availability(video_ids)
+    p 'Comprobando disponibilidad de los vídeos a insertar en la playlist...'
+    unavailable_videos = []
+
+    video_ids.each do |video_id|
+      begin
+        video = Yt::Video.new id: video_id, auth: @account
+        unavailable_videos << video.id if video.deleted? || video.rejected?
+      rescue StandardError
+        p "Vídeo no disponible: #{video.id}."
+        unavailable_videos << video.id
+      end
+    end
+
+    p "De un total de #{video_ids.size} vídeos, se encontraron #{unavailable_videos.size} vídeos no disponibles."
+
+    video_ids - unavailable_videos
+  end
+
+  def add_videos_to_playlist(available_videos, playlist)
+    p "Insertando vídeos en la playlist '#{YT_PLAYLIST_NAME}'..."
   end
 end
 
