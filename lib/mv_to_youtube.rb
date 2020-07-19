@@ -29,13 +29,13 @@ class MvToYoutube
     # Descomentar si no se dispone de token de autenticación. Seguir las instrucciones en https://github.com/Fullscreen/yt#web-apps-that-require-user-interactions
     # YouTubeAuth.setup_token
     @account = YouTubeAuth.config_auth
-    playlist = create_playlist(YT_PLAYLIST_NAME)
+    playlist_id = create_playlist(YT_PLAYLIST_NAME)
 
     # Comprueba la disponibilidad de los vídeos que se van a insertar en la playlist
     available_videos = check_video_availability(video_ids)
 
     # Inserta los vídeos disponibles en la playlist
-    add_videos_to_playlist(available_videos, playlist)
+    add_videos_to_playlist(available_videos, playlist_id)
   end
 
   def scrape(page)
@@ -61,7 +61,7 @@ class MvToYoutube
   def create_playlist(playlist_name)
     p "Comprobando la existencia de la playlist '#{playlist_name}'..."
 
-    if @account.playlists.map(&:title).include?(YT_PLAYLIST_NAME)
+    if @account.playlists.map(&:title).include? YT_PLAYLIST_NAME
       p "Playlist '#{YT_PLAYLIST_NAME}' encontrada."
       @account.playlists.map.collect { |playlist| playlist.id if playlist.title.eql? YT_PLAYLIST_NAME }.first
     else
@@ -89,8 +89,21 @@ class MvToYoutube
     video_ids - unavailable_videos
   end
 
-  def add_videos_to_playlist(available_videos, playlist)
-    p "Insertando vídeos en la playlist '#{YT_PLAYLIST_NAME}'..."
+  def add_videos_to_playlist(available_videos, playlist_id)
+    p "Insertando vídeos en la playlist '#{YT_PLAYLIST_NAME}'. Puede tardar unos minutos..."
+
+    playlist = Yt::Playlist.new id: playlist_id, auth: @account
+    playlist_items = playlist.playlist_items.map(&:video_id)
+    items_to_add = []
+
+    available_videos.each do |video|
+      items_to_add << video unless playlist_items.include? video
+    end
+
+    playlist.add_videos items_to_add
+
+    p "Añadidos #{items_to_add.size} vídeos a la playlist '#{YT_PLAYLIST_NAME}'. Se omitieron los vídeos duplicados."
+    p "https://www.youtube.com/playlist?list=#{playlist_id}"
   end
 end
 
