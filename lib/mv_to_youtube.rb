@@ -100,7 +100,7 @@ class MvToYoutube
       items_to_add << video unless playlist_items.include? video
     end
 
-    playlist.add_videos items_to_add
+    playlist.add_videos items_to_add if items_to_add.size.positive?
 
     p "Añadidos #{items_to_add.size} vídeos a la playlist '#{YT_PLAYLIST_NAME}'. Se omitieron los vídeos duplicados."
     p "https://www.youtube.com/playlist?list=#{playlist_id}"
