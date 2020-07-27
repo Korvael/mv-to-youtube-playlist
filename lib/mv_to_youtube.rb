@@ -2,15 +2,25 @@
 
 require 'nokogiri'
 require 'httparty'
+require_relative 'settings'
 require_relative 'youtube_auth'
+require 'yaml'
 require 'yt'
 
 # Genera una playlist en YouTube a partir de las aportaciones del hilo de Mediavida
 class MvToYoutube
-  # Constantes definidas por el usuario
-  MV_USER = 'Korvael'
-  YT_PLAYLIST_NAME = 'Mediavida'
-  YT_PLAYLIST_PRIVACY_STATUS = 'private'
+  # Generación de configuración en primera ejecución
+  Settings.generate_settings_file
+
+  # Carga de configuración desde fichero YAML
+  @settings = YAML.load_file('settings.yml')
+
+  MV_USER = @settings[:settings][:mv_user]
+  YT_PLAYLIST_NAME = @settings[:settings][:yt_playlist_name]
+  YT_PLAYLIST_PRIVACY_STATUS = @settings[:settings][:yt_playlist_privacy_status]
+  CLIENT_ID = @settings[:settings][:client_id]
+  CLIENT_SECRET = @settings[:settings][:client_secret]
+  REFRESH_TOKEN = @settings[:settings][:refresh_token]
 
   # Constantes del scraper
   MV_URL = 'https://www.mediavida.com/foro/feda/cancion-estas-escuchando-ahora-mismo-329209?'
@@ -25,10 +35,11 @@ class MvToYoutube
     # Obtención de los IDs de todos los vídeos
     video_ids = video_ids(total_pages)
 
-    # Crea la playlist de YouTube si no existe
-    # Descomentar si no se dispone de token de autenticación. Seguir las instrucciones en https://github.com/Fullscreen/yt#web-apps-that-require-user-interactions
-    # YouTubeAuth.setup_token
-    @account = YouTubeAuth.config_auth
+    # Autenticación y creación de la playlist de YouTube si no existe
+    token = YouTubeAuth.setup_token(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN)
+    update_settings_file(token) unless token.nil?
+
+    @account = YouTubeAuth.config_auth(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN.eql?('') ? token : REFRESH_TOKEN)
     playlist_id = create_playlist(YT_PLAYLIST_NAME)
 
     # Comprueba la disponibilidad de los vídeos que se van a insertar en la playlist
@@ -43,7 +54,7 @@ class MvToYoutube
   end
 
   def video_ids(total_pages)
-    p "Obteniendo vídeos de Mediavida del usario #{MV_USER}..."
+    p "Obteniendo vídeos de Mediavida del usuario #{MV_USER}..."
     video_ids = []
 
     (1..total_pages).each do |i|
@@ -104,6 +115,12 @@ class MvToYoutube
 
     p "Añadidos #{items_to_add.size} vídeos a la playlist '#{YT_PLAYLIST_NAME}'. Se omitieron los vídeos duplicados."
     p "https://www.youtube.com/playlist?list=#{playlist_id}"
+  end
+
+  def update_settings_file(token)
+    settings = MvToYoutube.instance_variable_get(:@settings)
+    settings[:settings][:refresh_token] = token
+    File.open('settings.yml', 'w') { |f| YAML.dump settings, f }
   end
 end
 
