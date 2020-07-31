@@ -19,18 +19,10 @@ class Settings
     p 'Selecciona el nivel de privacidad de la playlist (private/unscheduled/public):'
     yt_playlist_privacy_status = gets.chomp
 
-    p 'Introduce tu ID de cliente:'
-    client_id = gets.chomp
-
-    p 'Introduce tu secreto de cliente:'
-    client_secret = gets.chomp
-
     settings = { settings:
       { mv_user: mv_user,
         yt_playlist_name: yt_playlist_name,
         yt_playlist_privacy_status: yt_playlist_privacy_status,
-        client_id: client_id,
-        client_secret: client_secret,
         refresh_token: '' } }
 
     File.open('settings.yml', 'w') { |f| f.write settings.to_yaml }

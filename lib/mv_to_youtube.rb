@@ -18,8 +18,8 @@ class MvToYoutube
   MV_USER = @settings[:settings][:mv_user]
   YT_PLAYLIST_NAME = @settings[:settings][:yt_playlist_name]
   YT_PLAYLIST_PRIVACY_STATUS = @settings[:settings][:yt_playlist_privacy_status]
-  CLIENT_ID = @settings[:settings][:client_id]
-  CLIENT_SECRET = @settings[:settings][:client_secret]
+  CLIENT_ID = '1040937298085-5m57t818u5t34g2p2ggvppl474r96sbi.apps.googleusercontent.com'
+  CLIENT_SECRET = ''
   REFRESH_TOKEN = @settings[:settings][:refresh_token]
 
   # Constantes del scraper
